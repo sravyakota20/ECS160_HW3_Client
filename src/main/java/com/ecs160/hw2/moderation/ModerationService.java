@@ -1,4 +1,4 @@
-package com.ecs160.hw3.moderation;
+package com.ecs160.hw2.moderation;
 
 import org.springframework.boot.SpringApplication;
 import org.springframework.boot.autoconfigure.SpringBootApplication;

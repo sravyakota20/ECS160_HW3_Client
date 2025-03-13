@@ -1,4 +1,4 @@
-package com.ecs160.hw3.moderation;
+package com.ecs160.hw2.moderation;
 
 import org.springframework.http.ResponseEntity;
 import org.springframework.web.bind.annotation.*;
