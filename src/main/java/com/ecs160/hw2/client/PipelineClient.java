@@ -1,72 +1,56 @@
 package com.ecs160.hw2.client;
 
-import org.springframework.http.ResponseEntity;
-import org.springframework.web.bind.annotation.*;
+import com.ecs160.hw2.util.JsonParserUtility;
+import com.ecs160.hw2.util.Post;
+import org.springframework.http.*;
 import org.springframework.web.client.RestTemplate;
 
-import java.util.Arrays;
 import java.util.List;
 
-@RestController
 public class PipelineClient {
+    public static void main(String[] args) {
+        // get the top 10 most liked posts
+        List<Post> topPosts = JsonParserUtility.getTop10TopLevelPosts();
+        for (Post post: topPosts ) {
+            System.out.println(post);
+        }
 
-    // Banned words list
-    private final List<String> bannedWords = Arrays.asList(
-            "illegal", "fraud", "scam", "exploit", "dox", "swatting", "hack", "crypto", "bots"
-    );
+        // run thru each post and send to the Moderator microservice
+        RestTemplate restTemplate = new RestTemplate();
+        String port = System.getProperties().getProperty("server.port", "30000");
+        String moderationServiceUrl =  "http://localhost:" + port + "/moderate";
 
-    private final RestTemplate restTemplate = new RestTemplate();
-    // URL for the Hashtagging service – make sure this matches the port of your hashtagging microservice.
-    private final String hashtagServiceUrl = "http://localhost:30001/hashtag";
+        for (Post post : topPosts) {
+            String moderatedContent = sendModerationRequest(restTemplate, moderationServiceUrl, post.getPostContent());
+            System.out.println("Post ID: " + post.getPostId());
+            System.out.println("> " + moderatedContent);
 
-    @PostMapping("/moderate")
-    public ResponseEntity<String> moderate(@RequestBody PostRequest request) {
-        String content = request.getPostContent();
-        // Moderation check: if any banned word exists, return [DELETED]
-        for (String banned : bannedWords) {
-            if (content.toLowerCase().contains(banned)) {
-                return ResponseEntity.ok("[DELETED]");
+            // Process each reply similarly
+            if (post.getReplies() != null && !post.getReplies().isEmpty()) {
+                for (Post reply : post.getReplies()) {
+                    System.out.println("Sending Reply post for Moderation");
+                    String moderatedReply = sendModerationRequest(restTemplate, moderationServiceUrl, reply.getPostContent());
+                    System.out.println(" Got reply from Moderate Microservice  --> " + moderatedReply);
+                }
             }
         }
-        // Moderation passed. Call the hashtagging microservice.
-        try {
-            ResponseEntity<HashtagResponse> response = restTemplate.postForEntity(
-                    hashtagServiceUrl, request, HashtagResponse.class
-            );
-            if (response.getBody() != null && response.getBody().getHashtag() != null) {
-                // Append the generated hashtag to the post content.
-                return ResponseEntity.ok(content + " " + response.getBody().getHashtag());
-            }
-        } catch (Exception e) {
-            e.printStackTrace();
-            // In case of error, use default hashtag.
-            return ResponseEntity.ok(content + " " + "#bskypost");
-        }
-        // Fallback
-        return ResponseEntity.ok(content + " " + "#bskypost");
     }
 
-    // Request payload
-    static class PostRequest {
+    private static String sendModerationRequest(RestTemplate restTemplate, String url, String content) {
+        ModerationRequest req = new ModerationRequest();
+        req.setPostContent(content);
+        HttpHeaders headers = new HttpHeaders();
+        headers.setContentType(MediaType.APPLICATION_JSON);
+        HttpEntity<ModerationRequest> entity = new HttpEntity<>(req, headers);
+
+        ResponseEntity<String> response = restTemplate.postForEntity(url, entity, String.class);
+        return response.getBody();
+    }
+
+    // Request payload class
+    static class ModerationRequest {
         private String postContent;
-
-        public String getPostContent() {
-            return postContent;
-        }
-        public void setPostContent(String postContent) {
-            this.postContent = postContent;
-        }
-    }
-
-    // Response payload from Hashtagging service
-    static class HashtagResponse {
-        private String hashtag;
-
-        public String getHashtag() {
-            return hashtag;
-        }
-        public void setHashtag(String hashtag) {
-            this.hashtag = hashtag;
-        }
+        public String getPostContent() { return postContent; }
+        public void setPostContent(String postContent) { this.postContent = postContent; }
     }
 }
