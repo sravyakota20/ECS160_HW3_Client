@@ -1,4 +1,4 @@
-package com.ecs160.hw2.moderation;
+package com.ecs160.hw2.client;
 
 import org.springframework.http.ResponseEntity;
 import org.springframework.web.bind.annotation.*;
@@ -8,7 +8,7 @@ import java.util.Arrays;
 import java.util.List;
 
 @RestController
-public class ModerationController {
+public class PipelineClient {
 
     // Banned words list
     private final List<String> bannedWords = Arrays.asList(
