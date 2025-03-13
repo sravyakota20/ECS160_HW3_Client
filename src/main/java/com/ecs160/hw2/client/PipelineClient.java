@@ -23,15 +23,16 @@ public class PipelineClient {
 
         for (Post post : topPosts) {
             String moderatedContent = sendModerationRequest(restTemplate, moderationServiceUrl, post.getPostContent());
-            //System.out.println("Post ID: " + post.getPostId());
-            //System.out.println("> " + moderatedContent);
+            System.out.println("Post ID: " + post.getPostId());
+            System.out.println("> " + moderatedContent);
 
             // Process each reply similarly
             if (post.getReplies() != null && !post.getReplies().isEmpty()) {
                 for (Post reply : post.getReplies()) {
                     //System.out.println("Sending Reply post for Moderation");
                     String moderatedReply = sendModerationRequest(restTemplate, moderationServiceUrl, reply.getPostContent());
-                    //System.out.println(" Got reply from Moderate Microservice  --> " + moderatedReply);
+                    System.out.println("Post ID: " + post.getPostId());
+                    System.out.println("> " + moderatedReply);
                 }
             }
         }
